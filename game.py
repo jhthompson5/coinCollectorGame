@@ -11,7 +11,8 @@ silverSprite = "Sprites/coins/Silver/Silver_21.png"
 goldSprite = "Sprites/coins/Gold/Gold_21.png"
 coinScaling = .075
 UPGRADEBOX_UPPER = SCREEN_HEIGHT//4
-Upgrade_Order = [["Silver","Gold"],[10,200]]
+Upgrade_Order = [["Silver","Gold"],[40,200]]
+COINS = ["Bronze","Silver","Gold"]
 
 class TextButton:
     """ Text-based button """
@@ -122,6 +123,9 @@ class UpgradeButton(TextButton):
                 self.cost = Upgrade_Order[1][currentCoin+1]
                 self.text = f"Unlock {self.coin}" + "\n" + f"{self.cost}"
 
+    def updateAction(self,action):
+        self.action = action
+
     def updateCost(self,cost):
         if self.upgrade != 2:
             self.cost = cost
@@ -137,7 +141,7 @@ class Coin(object):
 
     def upgrade(self,upgrade):
         self.upgradeManager.upgradePurchased(upgrade,self.name)
-        self.value = 1.1 ** self.upgradeManager.upgrades[0][self.name] * self.upgradeManager.defaultValues[self.name]
+        self.value = 2 ** self.upgradeManager.upgrades[0][self.name] * self.upgradeManager.defaultValues[self.name]
         self.respawnTime = 0.9 ** self.upgradeManager.upgrades[1][self.name] * self.upgradeManager.defaultRespawnTimes[self.name]
         
         
@@ -209,7 +213,7 @@ class coinUpgradeManager(object):
         self.upgrades = [{"Bronze":0,"Silver":0,"Gold":0},{"Bronze":0,"Silver":0,"Gold":0},{"Bronze":True,"Silver":False,"Gold":False}]
         self.defaultRespawnTimes = {"Bronze":2.2,"Silver":11,"Gold":22}
         self.defaultValues = {"Bronze":1,"Silver":5,"Gold":10}
-        self.upgradeCosts = [{"Bronze":10,"Silver":100,"Gold":300},{"Bronze":5,"Silver":15,"Gold":45},{"Bronze":0,"Silver":10,"Gold":200}]
+        self.upgradeCosts = [{"Bronze":10,"Silver":100,"Gold":300},{"Bronze":5,"Silver":15,"Gold":45},{"Bronze":0,"Silver":40,"Gold":200}]
 
     def upgradePurchased(self,upgrade,coin):
         if upgrade == 0 or upgrade == 1:
@@ -272,10 +276,18 @@ class myGame(arcade.Window):
         UnlockButton = UpgradeButton(90,140,f"Unlock Silver{newline}{self.coinManager.upgradeCosts[2]['Silver']}",2,"Silver",self.Silver.upgrade,self.coinManager.upgradeCosts[2]["Silver"])   
         self.buttonList.append(UnlockButton)
 
-        bronzeSpawn = UpgradeButton(230,140,f"Increase Bronze Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Bronze']}",1,"Bronze",self.Bronze.upgrade,self.coinManager.upgradeCosts[1]["Bronze"],10)
-        silverSpawn = UpgradeButton(370,140,f"Increase Silver Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Silver']}",1,"Silver",self.Silver.upgrade,self.coinManager.upgradeCosts[1]["Silver"],10)
-        goldSpawn = UpgradeButton(510,140,f"Increase Gold Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Gold']}",1,"Gold",self.Gold.upgrade,self.coinManager.upgradeCosts[1]["Gold"],10)
+        bronzeSpawn = UpgradeButton(230,140,f"Increase Bronze Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Bronze']}",
+                                    1,"Bronze",self.Bronze.upgrade,self.coinManager.upgradeCosts[1]["Bronze"],10)
+        silverSpawn = UpgradeButton(370,140,f"Increase Silver Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Silver']}",
+                                    1,"Silver",self.Silver.upgrade,self.coinManager.upgradeCosts[1]["Silver"],10)
+        goldSpawn = UpgradeButton(510,140,f"Increase Gold Spawn Rate{newline}{self.coinManager.upgradeCosts[1]['Gold']}",
+                                  1,"Gold",self.Gold.upgrade,self.coinManager.upgradeCosts[1]["Gold"],10)
 
+        actions = [self.Bronze.upgrade, self.Silver.upgrade, self.Gold.upgrade]
+        for i in range(len(COINS)):
+            valueButton = UpgradeButton(230+140*i,60,f"Double {COINS[i]} Coin Value{newline}{self.coinManager.upgradeCosts[0][COINS[i]]}",
+                                        0,COINS[i],actions[i],self.coinManager.upgradeCosts[0][COINS[i]],12)
+            self.buttonList.append(valueButton)
         self.buttonList.append(bronzeSpawn)
         self.buttonList.append(silverSpawn)
         self.buttonList.append(goldSpawn)
@@ -325,6 +337,13 @@ class myGame(arcade.Window):
                     self.money -= cost
                     button.on_release()
                     button.updateCost(math.ceil(cost*1.3))
+                    if button.upgrade == 2:
+                        actString = button.coin
+                        newAction = getattr(self,actString)
+                        print(str(newAction))
+                        newAction = getattr(newAction,"upgrade")
+                        print(str(newAction))
+                        #button.updateAction(newAction)
                 else:
                     button.pressed = False
                     self.displayPurchaseError = True
@@ -354,6 +373,9 @@ class myGame(arcade.Window):
         arcade.draw_text(f"BSRate: {self.Bronze.respawnTime}",600,780,arcade.color.WHITE,14)
         arcade.draw_text(f"SSRate: {self.Silver.respawnTime}",600,740,arcade.color.WHITE,14)
         arcade.draw_text(f"GSRate: {self.Gold.respawnTime}",600,700,arcade.color.WHITE,14)
+        arcade.draw_text(f"BSRate: {self.Bronze.value}",600,660,arcade.color.WHITE,14)
+        arcade.draw_text(f"SSRate: {self.Silver.value}",600,620,arcade.color.WHITE,14)
+        arcade.draw_text(f"GSRate: {self.Gold.value}",600,580,arcade.color.WHITE,14)
         
     def update(self, delta_time): 
         self.Bronze.refresh(delta_time)
